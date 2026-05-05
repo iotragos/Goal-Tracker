@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>3 Person Goal Tracker</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 15px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+
+    .active {
+      background: #4caf50;
+      color: white;
+    }
+
+    .progress-container {
+      width: 100%;
+      background: #eee;
+      border-radius: 20px;
+      height: 25px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #4caf50;
+      transition: width 0.3s;
+    }
+
+    table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+
+    input { width: 120px; padding: 5px; text-align: center; }
+
+    .summary { margin-top: 15px; font-size: 18px; }
+  </style>
+</head>
+<body>
+
+<h2>🎯 €50,000 Goal Tracker (June 2026 → June 2028)</h2>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchUser('Goat')">Goat</div>
+  <div class="tab" onclick="switchUser('Cinnamon')">Cinnamon</div>
+  <div class="tab" onclick="switchUser('Totti')">Totti</div>
+</div>
+
+<h3 id="name"></h3>
+
+<div class="progress-container">
+  <div class="progress-bar" id="bar"></div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Month</th>
+      <th>Remaining</th>
+      <th>Saving (€)</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
+
+<div class="summary">
+  💰 Total Saved: €<span id="total">0</span><br>
+  🎯 Remaining: €<span id="remaining">50000</span>
+</div>
+
+<script>
+const goal = 50000;
+
+const start = new Date("2026-06-01");
+const end = new Date("2028-06-01");
+
+const months = [];
+let current = new Date(start);
+
+while (current <= end) {
+  months.push(new Date(current));
+  current.setMonth(current.getMonth() + 1);
+}
+
+let currentUser = "Goat";
+
+let data = {
+  Goat: JSON.parse(localStorage.getItem("Goat") || "{}"),
+  Cinnamon: JSON.parse(localStorage.getItem("Cinnamon") || "{}"),
+  Totti: JSON.parse(localStorage.getItem("Totti") || "{}")
+};
+
+function formatDate(d) {
+  return d.toLocaleString('default', { month: 'long', year: 'numeric' });
+}
+
+function calculateTotal(user) {
+  let total = 0;
+  for (let k in data[user]) {
+    total += parseFloat(data[user][k] || 0);
+  }
+  return total;
+}
+
+function render() {
+  document.getElementById("name").innerText = currentUser;
+
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+
+  let total = calculateTotal(currentUser);
+  let remaining = goal - total;
+
+  months.forEach((m, i) => {
+    const key = m.toISOString().slice(0,7);
+    const val = data[currentUser][key] || "";
+    const left = months.length - i - 1;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${formatDate(m)}</td>
+      <td>${left}</td>
+      <td>
+        <input type="number" value="${val}"
+          onchange="updateValue('${key}', this.value)">
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  document.getElementById("total").innerText = total.toFixed(2);
+  document.getElementById("remaining").innerText = remaining.toFixed(2);
+
+  let percent = (total / goal) * 100;
+  if (percent > 100) percent = 100;
+
+  document.getElementById("bar").style.width = percent + "%";
+
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t => {
+    if (t.innerText === currentUser) t.classList.add("active");
+  });
+}
+
+function updateValue(key, value) {
+  data[currentUser][key] = value;
+  localStorage.setItem(currentUser, JSON.stringify(data[currentUser]));
+  render();
+}
+
+function switchUser(user) {
+  currentUser = user;
+  render();
+}
+
+render();
+</script>
+
+</body>
+</html>
